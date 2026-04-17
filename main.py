@@ -1,6 +1,17 @@
 import os
+import sys
 import datetime
 import subprocess
+import time
+from PyQt6.QtWidgets import QApplication, QMainWindow
+from PyQt6.QtGui import QIcon
+
+class MainWindow(QMainWindow):
+    def __init__(self):
+        super().__init__()
+        self.setWindowTitle("PyNetwork Timer")
+        self.setGeometry(1000, 0, 500, 500)
+        self.setWindowIcon(QIcon("placedholder_icon.jpg"))
 
 # Returns list of network devices for linux OS
 def get_linux_devs():
@@ -14,6 +25,8 @@ def get_linux_devs():
         
 # Returns list of network devices for Windows OS
 def get_win_devs():
+    # command = "Get-NetAdapter | Format-list -Property "Name",
+    #  "MediaConnectionState", "Status", "ifDesc"
     pass
 
 # stores disconnection interval
@@ -35,29 +48,46 @@ class NetworkDevice:
         self.type = type
         self.connection = connection if connection != "" else "none"
 
-
-    def connect_device():
-        pass
+    def connect(self):
+            command = f"nmcli device connect {self.name}"
+            subprocess.check_output(command, shell=True)
+            print(f"Device {self.name} has been connected.")
         
-    def disconnect_device():
-        pass
+    def disconnect(self):
+            command = f"nmcli device disconnect {self.name}"
+            subprocess.check_output(command, shell=True)
+            print(f"Device {self.name} has been disconnected.")
 
     def __str__(self):
         return f"""Name: {self.name} State: {self.state} Type: {self.type} 
-        Connection: {self.connection} """
+        Connection: {self.connection}"""
     
 def main():
+
+    app = QApplication(sys.argv)
+    window = MainWindow()
+    window.show()
+    app.exec()
+
 # hold list of Network Device Objects
     device_list= []
-
 # for Linux OS, create Network Device Objects
     if os.name == "posix":
         for line in get_linux_devs().splitlines():
             split_line = line.decode().split(":")
-            device = NetworkDevice(split_line[0],split_line[1],split_line[2],split_line[3])
+            device = NetworkDevice(split_line[0],split_line[1],split_line[2],
+                                   split_line[3])
             device_list.append(device)
         for value in device_list:
-               print(value)
+                print(value)
+        interval = Interval("14:01","19:59","0","0","0","0")
+        now = datetime.datetime.now()
+        compare_start_time = now.replace(hour=int(interval.start_time.split(":")[0]),
+                                         minute=int(interval.start_time.split(":")[1]))
+        compare_end_time = now.replace(hour=int(interval.end_time.split(":")[0]),
+                                         minute=int(interval.end_time.split(":")[1]))
+
+             
 
     elif os.name == "nt":
         get_win_devs()
