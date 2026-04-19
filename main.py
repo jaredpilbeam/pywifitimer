@@ -4,8 +4,8 @@ import datetime
 import subprocess
 import time
 from PyQt6.QtWidgets import (QApplication, QWidget, QMainWindow, QTabWidget, 
-                             QFormLayout, QGridLayout, QLineEdit,QCheckBox, 
-                             QTableWidget, QTableWidgetItem)
+                             QFormLayout, QGridLayout, QCheckBox, QTableWidget, 
+                             QTableWidgetItem, QPushButton)
 from PyQt6.QtGui import QIcon
 
 def get_linux_devs():
@@ -28,18 +28,19 @@ class PyNetworkTimer(QMainWindow):
         super().__init__(*args,**kwargs)
         self.setWindowTitle("PyNetwork Timer")
         self.setWindowIcon(QIcon("placedholder_icon.jpg"))
+
+        self.setGeometry(500, 500, 648, 500)
+        self.initUI()
+
+    def initUI(self):
         widget = QWidget()
-        main_layout = QGridLayout()
-        widget.setLayout(main_layout)
+        self.main_layout = QGridLayout()
+        widget.setLayout(self.main_layout)
         self.setCentralWidget(widget)
-        self.setGeometry(500, 500, 500, 500)
-
         tab = QTabWidget(self)
-    
-        test_page = QWidget(self)
-        test_page_layout = QGridLayout()
-        test_page.setLayout(test_page_layout)
-
+        status_page = QWidget(self)
+        status_page_layout = QGridLayout()
+        status_page.setLayout(status_page_layout)
 # hold list of Network Device Objects
         device_list= []
         if os.name == "posix":
@@ -48,29 +49,64 @@ class PyNetworkTimer(QMainWindow):
                 device = NetworkDevice(split_line[0],split_line[1],split_line[2],
                                    split_line[3])
                 device_list.append(device)
-                test_page_layout.addWidget(QCheckBox(text=split_line[0]))
+                status_page_layout.addWidget(QCheckBox(text=split_line[0]))
         elif os.name == "nt":
             get_win_devs()
 
-        test_page2 = QWidget(self)
-        interval_testing = [[0,0,0,0,0,0],[0,0,0,0,0,0]]
-        layout = QFormLayout()
-        test_page2.setLayout(layout)
-        table = QTableWidget()
+        schedule_page = QWidget(self)
+        interval_testing = []
+        schedule_page_layout = QFormLayout()
+        schedule_page.setLayout(schedule_page_layout)
+        table = QTableWidget(schedule_page)
         table.setRowCount(len(interval_testing))
         table.setColumnCount(6)
         table.setHorizontalHeaderLabels(["Start Time", "End time","Day","Month",
                                          "Year","Day of Week"])
+        schedule_page_layout.addWidget(table)
+        add_button = QPushButton("Add Interval")
+        remove_button = QPushButton("Remove Interval")
+        start_test_button = QPushButton("TEST transfer to list of lists")
+        add_button.clicked.connect(lambda: self.add_button_click(table, interval_testing))
+        remove_button.clicked.connect(lambda: self.remove_button_click(table, interval_testing))
+        start_test_button.clicked.connect(lambda: self.start_test_click(table, interval_testing))
+        schedule_page_layout.addWidget(remove_button)
+        schedule_page_layout.addWidget(add_button)
+        schedule_page_layout.addWidget(start_test_button)
+       
+        tab.addTab(status_page, "Status")
+        tab.addTab(schedule_page, "Schedule")
+        self.main_layout.addWidget(tab, 0, 0, 2, 1)
 
-        tab.addTab(test_page, "TEST")
-        tab.addTab(test_page2, "TEST2")
+    def remove_button_click(self,table, interval_testing):
+        if(len(interval_testing) > 0 and table.currentRow() != -1):
+            delete_rows_set = set()
+            for item in table.selectedItems():
+                delete_rows_set.add(item.row())
+            delete_rows_list = list(delete_rows_set)
+            delete_rows_list.sort()
+            delete_rows_list.reverse()
+            for i in delete_rows_list:
+                 table.removeRow(i)
+                 interval_testing.pop(i)
+        else: 
+             pass
+            
+    def add_button_click(self, table, interval_testing):
+         table.insertRow(table.rowCount())
+         for i in range(0,6):
+              table.setItem((table.rowCount()-1), i, QTableWidgetItem(" "))
+         return interval_testing.append(["","","","","",""])
+    
+    def start_test_click(self, table, interval_testing):
+        for i in range(0, table.rowCount()):
+            for j in range(0, 6):
+                if(table.item(i,j) is None) :
+                     interval_testing[i][j] = ""
+                else:interval_testing[i][j] = table.item(i,j).text()
 
-        main_layout.addWidget(tab, 0,0,2,1)
-        
+                     
 
-
-    # Returns list of network devices for linux OS
-  
+   
     # stores disconnection interval
 class Interval:
     def __init__(self, start_time, end_time, day_of_month="", month="", year="",
@@ -101,18 +137,14 @@ class NetworkDevice:
             print(f"Device {self.name} has been disconnected.")
 
     def populate_status_tab(self):
-        test_page = QWidget(self)
+        status_page = QWidget(self)
         layout = QGridLayout()
-        test_page.setLayout(layout)
+        status_page.setLayout(layout)
 
     def __str__(self):
         return f"""Name: {self.name} State: {self.state} Type: {self.type} 
         Connection: {self.connection}"""
     
-
-    # for Linux OS, create Network Device Objects
-    
-
     interval = Interval("14:01","19:59","0","0","0","0")
     now = datetime.datetime.now()
     compare_start_time = now.replace(hour=
@@ -123,8 +155,7 @@ class NetworkDevice:
                                     int(interval.end_time.split(":")[0]),
                                     minute=
                                     int(interval.end_time.split(":")[1]))
-
-                
+               
 if __name__=="__main__":
     app = QApplication(sys.argv)
     window = PyNetworkTimer()
