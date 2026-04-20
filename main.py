@@ -3,10 +3,9 @@ import sys
 import datetime
 import subprocess
 import time
-from PyQt6.QtWidgets import (QApplication, QWidget, QMainWindow, QTabWidget, 
-                             QFormLayout, QGridLayout, QCheckBox, QTableWidget, 
-                             QTableWidgetItem, QPushButton)
-from PyQt6.QtGui import QIcon
+from PyQt6.QtWidgets import *
+from PyQt6.QtGui import *
+from PyQt6.QtCore import *
 
 def get_linux_devs():
         command = 'nmcli -t -f "DEVICE","TYPE","STATE","CONNECTION" d s'     
@@ -23,37 +22,51 @@ def get_win_devs():
         #  "MediaConnectionState", "Status", "ifDesc"
         pass
 
-class PyNetworkTimer(QMainWindow):
+class PyNetworkTimer(QWidget):
     def __init__(self, *args, **kwargs):
         super().__init__(*args,**kwargs)
         self.setWindowTitle("PyNetwork Timer")
         self.setWindowIcon(QIcon("placedholder_icon.jpg"))
 
-        self.setGeometry(500, 500, 648, 500)
+        self.setGeometry(500, 500, 652, 400)
         self.initUI()
 
     def initUI(self):
-        widget = QWidget()
         self.main_layout = QGridLayout()
-        widget.setLayout(self.main_layout)
-        self.setCentralWidget(widget)
+        self.setLayout(self.main_layout)
         tab = QTabWidget(self)
-        status_page = QWidget(self)
+        tab_layout = QGridLayout()
+        tab.setLayout(tab_layout)
+        status_page = QWidget(tab)
         status_page_layout = QGridLayout()
         status_page.setLayout(status_page_layout)
 # hold list of Network Device Objects
         device_list= []
         if os.name == "posix":
+            status_page_layout.addWidget(QLabel("Select Networks to Connect/Disconnect on schedule:"),0,0,1,3)
+            i=1
+            j=0
             for line in get_linux_devs().splitlines():
                 split_line = line.decode().split(":")
                 device = NetworkDevice(split_line[0],split_line[1],split_line[2],
                                    split_line[3])
                 device_list.append(device)
-                status_page_layout.addWidget(QCheckBox(text=split_line[0]))
+                checkbox = QCheckBox(text=split_line[0])
+                status_page_layout.addWidget(checkbox, i, j,
+                                             alignment=Qt.AlignmentFlag.AlignLeft)
+                i += 1
+                if( i % 4 == 3):
+                     j += 1
+                     i = 1
+            status_page_layout.addWidget(QLabel(""))
+            status_page_layout.setRowStretch((j+1),1)
+            status_page_layout.addWidget(QLabel(QTime.currentTime().toString("hh:mm:ss")),j+2,0,1,2)
+            status_page_layout.addWidget(QPushButton("Start Schedule"),j+2,2)
+
         elif os.name == "nt":
             get_win_devs()
 
-        schedule_page = QWidget(self)
+        schedule_page = QWidget(tab)
         interval_testing = []
         schedule_page_layout = QFormLayout()
         schedule_page.setLayout(schedule_page_layout)
@@ -104,9 +117,6 @@ class PyNetworkTimer(QMainWindow):
                      interval_testing[i][j] = ""
                 else:interval_testing[i][j] = table.item(i,j).text()
 
-                     
-
-   
     # stores disconnection interval
 class Interval:
     def __init__(self, start_time, end_time, day_of_month="", month="", year="",
@@ -145,16 +155,16 @@ class NetworkDevice:
         return f"""Name: {self.name} State: {self.state} Type: {self.type} 
         Connection: {self.connection}"""
     
-    interval = Interval("14:01","19:59","0","0","0","0")
-    now = datetime.datetime.now()
-    compare_start_time = now.replace(hour=
-                                    int(interval.start_time.split(":")[0]),
-                                    minute=
-                                    int(interval.start_time.split(":")[1]))
-    compare_end_time = now.replace(hour=
-                                    int(interval.end_time.split(":")[0]),
-                                    minute=
-                                    int(interval.end_time.split(":")[1]))
+interval = Interval("14:01","19:59","0","0","0","0")
+now = datetime.datetime.now()
+compare_start_time = now.replace(hour=
+                                int(interval.start_time.split(":")[0]),
+                                minute=
+                                int(interval.start_time.split(":")[1]))
+compare_end_time = now.replace(hour=
+                                int(interval.end_time.split(":")[0]),
+                                minute=
+                                int(interval.end_time.split(":")[1]))
                
 if __name__=="__main__":
     app = QApplication(sys.argv)
