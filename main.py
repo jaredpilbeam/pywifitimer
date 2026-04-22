@@ -28,8 +28,7 @@ class PyNetworkTimer(QWidget):
         super().__init__(*args,**kwargs)
         self.setWindowTitle("PyNetwork Timer")
         self.setWindowIcon(QIcon("placedholder_icon.jpg"))
-
-        self.setGeometry(500, 500, 452, 400)
+        self.resize(452, 400)
         self.initUI()
 
     def initUI(self):
@@ -80,6 +79,7 @@ class PyNetworkTimer(QWidget):
         interval_testing = []
         schedule_page_layout = QGridLayout()
         schedule_page.setLayout(schedule_page_layout)
+        self.schedule_running = False
         table = QTableWidget(schedule_page)
         table.setRowCount(len(interval_testing))
         table.setColumnCount(4)
@@ -89,15 +89,18 @@ class PyNetworkTimer(QWidget):
         remove_button = QPushButton("Remove Interval")
         interval_type = QComboBox()
         interval_type.addItems(['Daily','Weekly','By Date'])
-        add_button.clicked.connect(lambda: self.add_button_click(table, interval_testing))
+        add_button.clicked.connect(lambda: self.add_button_click(table, interval_testing,interval_type.currentText()))
         remove_button.clicked.connect(lambda: self.remove_button_click(table, interval_testing))
         schedule_page_layout.addWidget(interval_type,1,0)
         schedule_page_layout.addWidget(add_button,1,1)
         schedule_page_layout.addWidget(remove_button,2,0,1,2)
         schedule_on.clicked.connect(lambda: self.schedule_on_click(table, interval_testing))
+        schedule_off.clicked.connect(lambda: self.schedule_off_click())
         tab.addTab(status_page, "Status")
         tab.addTab(schedule_page, "Schedule")
         self.main_layout.addWidget(tab, 0, 0, 2, 1)
+   
+        
         
 
     def remove_button_click(self,table, interval_testing):
@@ -114,42 +117,72 @@ class PyNetworkTimer(QWidget):
         else: 
              pass
             
-    def add_button_click(self, table, intervals):
-         table.insertRow(table.rowCount())
-         interval_dropdown = QComboBox()
-         interval_dropdown.addItems(['Monday','Tuesday','Wednesday','Thursday',
+    def add_button_click(self, table, intervals, interval_type_text):
+        table.insertRow(table.rowCount())
+        interval_dropdown = QComboBox()
+        interval_dropdown.addItems(['Monday','Tuesday','Wednesday','Thursday',
                                     'Friday', 'Saturday', 'Sunday'])
-         interval_date = QDateEdit(self)
-         interval_date.editingFinished.connect(interval_date.update)
-         for i in range(0,4):
-            table.setItem((table.rowCount()-1), i, QTableWidgetItem())
-            if i == 0:
-                table.setCellWidget((table.rowCount()-1), i, QTimeEdit(self))
-            elif i == 1:
-                table.setCellWidget((table.rowCount()-1), i, QTimeEdit(self))
-            elif i == 2:
-                 table.setCellWidget((table.rowCount()-1), i, interval_date)
-            elif i == 3:
-                 table.setCellWidget((table.rowCount()-1), i, interval_dropdown)
-         return intervals.append(["","","",""])
+        interval_date = QDateEdit(self)
+        interval_date.editingFinished.connect(interval_date.update)
+        if interval_type_text == "Daily":
+            for i in range(0,4):
+                table.setItem((table.rowCount()-1), i, QTableWidgetItem())
+                if i == 0:
+                    table.setCellWidget((table.rowCount()-1), i, QTimeEdit(self))
+                elif i == 1:
+                    table.setCellWidget((table.rowCount()-1), i, QTimeEdit(self))
+                elif i == 2 or 3:
+                    table.removeCellWidget((table.rowCount()-1), i)
+        elif interval_type_text == "By Date":
+            for i in range(0,4):
+                table.setItem((table.rowCount()-1), i, QTableWidgetItem())
+                if i == 0:
+                    table.setCellWidget((table.rowCount()-1), i, QTimeEdit(self))
+                elif i == 1:
+                    table.setCellWidget((table.rowCount()-1), i, QTimeEdit(self))
+                elif i == 2:
+                    table.setCellWidget((table.rowCount()-1), i, interval_date)
+                elif i == 3:
+                    table.removeCellWidget((table.rowCount()-1), i )
+        elif interval_type_text == "Weekly":
+            for i in range(0,4):
+                table.setItem((table.rowCount()-1), i, QTableWidgetItem())
+                if i == 0:
+                    table.setCellWidget((table.rowCount()-1), i, QTimeEdit(self))
+                elif i == 1:
+                    table.setCellWidget((table.rowCount()-1), i, QTimeEdit(self))
+                elif i == 2:
+                    table.removeCellWidget((table.rowCount()-1), i)
+                elif i == 3:
+                    table.setCellWidget((table.rowCount()-1), i, interval_dropdown )
+        return intervals.append(["","","",""])
+    
+
+    
     
     def schedule_on_click(self, table, intervals):
+        if self.schedule_running == True:
+            return
         for i in range(0, table.rowCount()):
             for j in range(4):
-                if(table.item(i,j) is None) :
+                try:
+                    if j in range(3):
+                        intervals[i][j] = table.cellWidget(i,j).text()
+                    elif j == 3:
+                        intervals[i][j] = table.cellWidget(i,j).currentText()
+                except AttributeError:
                      intervals[i][j] = ""
-                elif j in range(3):
-                     intervals[i][j] = table.cellWidget(i,j).text()
-                elif j == 3:
-                     intervals[i][j] = table.cellWidget(i,j).currentText()
         print(intervals)
         self.schedule_run_loop()
+        self.schedule_running = True
 
     def schedule_run_loop(self):
          pass
 
     def schedule_off_click(self):
-         pass
+         self.schedule_running = False
+
+
 
     # stores network devices, their states and connections.
 class NetworkDevice:
@@ -177,6 +210,13 @@ class NetworkDevice:
     def __str__(self):
         return f"""Name: {self.name} State: {self.state} Type: {self.type} 
         Connection: {self.connection}"""
+    
+def show(self):
+    geo = self.frameGeometry()
+    geo.moveCenter(self.mainWindow.geometry().center())
+    geo.moveTop(self.mainWindow.geometry().top())
+    self.move(geo.topLeft())
+    super().show()
                
 if __name__=="__main__":
     app = QApplication(sys.argv)
