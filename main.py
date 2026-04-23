@@ -75,14 +75,13 @@ class PyNetworkTimer(QWidget):
                 elif(len(get_linux_devs().splitlines()) == 2):
                     status_page_layout.addWidget(QLabel(""), j, i)
 
-      
-            status_page_layout.addWidget(QLabel(""))
+            self.status_line = QLabel("Schedule not running")
             status_page_layout.setRowStretch((j+1),1)
-            status_page_layout.addWidget(QLabel(QTime.currentTime().toString("hh:mm:ss")),j+2,0,1,2)
+            status_page_layout.addWidget(self.status_line,j+2,0,1,3)
             schedule_on = QPushButton("Start Schedule")
             schedule_off = QPushButton("Stop Schedule")
-            status_page_layout.addWidget(schedule_on,j+2,1)
-            status_page_layout.addWidget(schedule_off,j+2,2)
+            status_page_layout.addWidget(schedule_on,j+3,1)
+            status_page_layout.addWidget(schedule_off,j+3,2)
 
         elif os.name == "nt": 
             i=1
@@ -177,9 +176,9 @@ class PyNetworkTimer(QWidget):
         interval_date.setMinimumDate(today)
         interval_date.editingFinished.connect(interval_date.update)
         start_time = QTimeEdit(self)
-        start_time.setTime(QTime().fromString("12:00 AM","hh:mm AP"))
+        start_time.setTime(QTime().fromString("12:00 AM","h:mm AP"))
         end_time = QTimeEdit(self)
-        end_time.setTime(QTime().fromString("12:01 AM","hh:mm AP"))
+        end_time.setTime(QTime().fromString("12:01 AM","h:mm AP"))
         start_time.timeChanged.connect(lambda: end_time.setMinimumTime(start_time.time()))
         end_time.timeChanged.connect(lambda: start_time.setMaximumTime(end_time.time()))
         if interval_type_text == "Daily":
@@ -269,6 +268,7 @@ class PyNetworkTimer(QWidget):
                                         device.connect_network(checkbox.text())
                                 except subprocess.CalledProcessError:
                                     print("There was issue with connecting or disconnecting.")
+                        self.status_line.setText(f"Disconnected. Next reconnection at : {(interval[1]).toString("h:mm AP")}")
                         break  
                 elif interval[2] == "" and interval[3] != "" :
                     if current_dow == interval[3]:
@@ -282,6 +282,7 @@ class PyNetworkTimer(QWidget):
                                             device.connect_network(checkbox.text())
                                     except subprocess.CalledProcessError:
                                         print("There was issue with connecting or disconnecting.")
+                            self.status_line.setText(f"Disconnected. Next reconnection at : {(interval[1]).toString("h:mm AP")}")
                             break
                 elif interval[2] != "" and interval[3] == "" :
                     if now.date() == interval[2]:
@@ -295,10 +296,12 @@ class PyNetworkTimer(QWidget):
                                             device.connect_network(checkbox.text())
                                     except subprocess.CalledProcessError:
                                         print("There was issue with connecting or disconnecting.")
+                            self.status_line.setText(f"Disconnected. Next reconnection at : {(interval[1]).toString("h:mm AP")}")
                             break
                         for device in self.device_list:
                             if device.connection == "none":
                                 device.connect_network(device.name)
+                self.status_line.setText("Reconnected, waiting for next scheduled disconnection.")
             time.sleep(1)
             if self.schedule_running == False:
                 break
@@ -313,8 +316,7 @@ class PyNetworkTimer(QWidget):
         for device in self.device_list:
             if device.connection == "none":
                 device.connect_network(device.name)
-        time.sleep(1)
-
+        self.status_line.setText("Schedule not running")
     # stores network devices, their states and connections.
 class NetworkDevice:
     def __init__(self, name, type, connection):
