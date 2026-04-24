@@ -15,20 +15,27 @@ def get_linux_devs():
             output = subprocess.check_output(command, shell=True)
         except subprocess.CalledProcessError as cpe:
             output = cpe.output
-        finally:
-            return output
+        return output
             
     # Returns list of network devices for Windows OS
 def get_win_devs():
-        # command = "Get-NetAdapter | Format-list -Property "Name",
-        #  "MediaConnectionState", "Status", "ifDesc"
-        #try:
-        #    output = subprocess.check_output(command, shell=True)
-        #except subprocess.CalledProcessError as cpe:
-        #    output = cpe.output
-        #finally:
-        #    return output
-        pass
+        name_command = """Get-NetAdapter | ForEach-Object {$_.Name.Trim()} """
+        try:
+            name_output = subprocess.check_output(["powershell", "-Command", name_command])
+        except subprocess.CalledProcessError as cpe:
+            name_output = cpe.name_output
+        type_command = """Get-NetAdapter | ForEach-Object {$_.ifDesc.Trim()}"""
+        try:
+            type_output = subprocess.check_output(["powershell", "-Command", type_command])
+        except subprocess.CalledProcessError as cpe:
+            type_output = cpe.type_output
+        connection_command = """Get-NetAdapter | ForEach-Object {$_.Status.Trim()}"""
+        try:
+            connection_output = subprocess.check_output(["powershell", "-Command", connection_command])
+        except subprocess.CalledProcessError as cpe:
+            connection_output = cpe.connection_output
+        return name_output, type_output, connection_output
+
 
 class PyNetworkTimer(QWidget):
     def __init__(self, *args, **kwargs):
@@ -48,6 +55,7 @@ class PyNetworkTimer(QWidget):
         status_page_layout = QGridLayout()
         status_page.setLayout(status_page_layout)
         status_page_layout.addWidget(QLabel("Select Network Device(s) to schedule:"),0,0,1,3)
+        self.schedule_running = False
 # hold list of Network Device Objects
         self.device_list= []
         if os.name == "posix":
@@ -88,31 +96,42 @@ class PyNetworkTimer(QWidget):
             j=0
             index = 0
             self.checkboxes=[]
-            for line in get_win_devs()().splitlines():
-                split_line = line.decode().split(":")
-                if (split_line[1] == "ethernet" or split_line[1] == "wifi"):
-                    device = NetworkDevice(split_line[0],split_line[1],
-                                    split_line[3])
+            names, types, connections = get_win_devs()
+            names = (names.decode("utf-8")).splitlines()
+            types = (types.decode("utf-8")).splitlines()
+            connections = (connections.decode("utf-8")).splitlines()
+
+            for k in range(0,len(names)):
+                if names[k] == "Ethernet" or names[k] == "Wi-Fi":
+                    device = NetworkDevice(names[k], types[k], connections[k])
                     self.device_list.append(device)
-                    self.checkboxes.append(QCheckBox(text=split_line[0]))
+                    self.checkboxes.append(QCheckBox(text=names[k]))
                     self.checkboxes[index].setChecked(True)
                     status_page_layout.addWidget(self.checkboxes[index], i, j,
                                                 alignment=Qt.AlignmentFlag.AlignLeft)
                     index += 1
-                i += 1
+                    i += 1
                 if( i % 4 == 3):
                      j += 1
                      i = 1
-                if(len(get_linux_devs().splitlines()) == 1):
+                if(len(names) == 1):
                      status_page_layout.addWidget(QLabel(""), j, i, 1, 2)
-                elif(len(get_linux_devs().splitlines()) == 2):
+                elif(len(names) == 2):
                     status_page_layout.addWidget(QLabel(""), j, i)
+
+            self.status_line = QLabel("Schedule not running")
+            status_page_layout.setRowStretch((j+1),1)
+            status_page_layout.addWidget(QLabel(""),j+2,1,5,4)
+            status_page_layout.addWidget(self.status_line,j+6,0,1,4)
+            schedule_on = QPushButton("Start Schedule")
+            schedule_off = QPushButton("Stop Schedule")
+            status_page_layout.addWidget(schedule_on,j+7,1,1,2)
+            status_page_layout.addWidget(schedule_off,j+7,3,1,2)
 
         schedule_page = QWidget(tab)
         interval_testing = []
         schedule_page_layout = QGridLayout()
         schedule_page.setLayout(schedule_page_layout)
-        self.schedule_running = False
         table = QTableWidget(schedule_page)
         table.setRowCount(len(interval_testing))
         table.setColumnCount(4)
@@ -143,13 +162,16 @@ class PyNetworkTimer(QWidget):
                 self.device_list.append(device)
 
     def update_windows_devs(self):
-        self.device_list = []
-        for line in get_win_devs().splitlines():
-            split_line = line.decode().split(":")
-            if (split_line[1] == "ethernet" or split_line[1] == "wifi"):
-                device = NetworkDevice(split_line[0],split_line[1],
-                        split_line[3])
+        self.device_list=[]
+        names, types, connections = get_win_devs()
+        names = (names.decode("utf-8")).splitlines()
+        types = (types.decode("utf-8")).splitlines()
+        connections = (connections.decode("utf-8")).splitlines()
+        for k in range(0,len(names)):
+            if names[k] == "Ethernet" or names[k] == "Wi-Fi":
+                device = NetworkDevice(names[k], types[k], connections[k])
                 self.device_list.append(device)
+
 
     def remove_button_click(self,table, interval_testing):
         if(len(interval_testing) > 0 and table.currentRow() != -1):
@@ -250,10 +272,11 @@ class PyNetworkTimer(QWidget):
                 return "Sunday" 
         
     def schedule_run_loop(self, intervals):
-
-        print("Starting Schedule...")
         while True:
-            self.update_linux_devs()
+            if os.name == "posix":
+                self.update_linux_devs()
+            elif os.name == "nt":
+                self.update_windows_devs()
             now = QDateTime.currentDateTime()
             current_dow = self.day_of_week_encode((now.date()).dayOfWeek())
             for interval in intervals:
@@ -267,7 +290,7 @@ class PyNetworkTimer(QWidget):
                                     if not checkbox.isChecked() and checkbox.text() == device.name and device.connection == "none":
                                         device.connect_network(checkbox.text())
                                 except subprocess.CalledProcessError:
-                                    print("There was issue with connecting or disconnecting.")
+                                    pass
                         self.status_line.setText(f"Disconnected. Next reconnection at : {(interval[1]).toString("h:mm AP")}")
                         break  
                 elif interval[2] == "" and interval[3] != "" :
@@ -281,7 +304,7 @@ class PyNetworkTimer(QWidget):
                                         if not checkbox.isChecked() and checkbox.text() == device.name and device.connection == "none":
                                             device.connect_network(checkbox.text())
                                     except subprocess.CalledProcessError:
-                                        print("There was issue with connecting or disconnecting.")
+                                        pass
                             self.status_line.setText(f"Disconnected. Next reconnection at : {(interval[1]).toString("h:mm AP")}")
                             break
                 elif interval[2] != "" and interval[3] == "" :
@@ -295,24 +318,28 @@ class PyNetworkTimer(QWidget):
                                         if not checkbox.isChecked() and checkbox.text() == device.name and device.connection == "none":
                                             device.connect_network(checkbox.text())
                                     except subprocess.CalledProcessError:
-                                        print("There was issue with connecting or disconnecting.")
+                                        pass
                             self.status_line.setText(f"Disconnected. Next reconnection at : {(interval[1]).toString("h:mm AP")}")
                             break
-                        for device in self.device_list:
-                            if device.connection == "none":
-                                device.connect_network(device.name)
+                for device in self.device_list:
+                    if device.connection == "none":
+                        device.connect_network(device.name) 
+
                 self.status_line.setText("Reconnected, waiting for next scheduled disconnection.")
             time.sleep(1)
             if self.schedule_running == False:
                 break
 
     def schedule_off_click(self):
-        print("Stopping schedule...")
         if self.schedule_running == False:
             return
+
         self.schedule_running = False
         self.schedule_thread.join()
-        self.update_linux_devs()
+        if os.name == "posix":
+            self.update_linux_devs()
+        elif os.name == "nt":
+            self.update_windows_devs()
         for device in self.device_list:
             if device.connection == "none":
                 device.connect_network(device.name)
@@ -322,17 +349,28 @@ class NetworkDevice:
     def __init__(self, name, type, connection):
         self.name = name
         self.type = type
-        self.connection = connection if connection != "" else "none"
+        self.connection = connection 
+        if self.connection == "Disabled" or self.connection == "":
+            self.connection = "none"
 
     def connect_network(self,name):
+        if os.name == "posix":
             command = f"nmcli device connect {name}"
             subprocess.check_output(command, shell=True)
-            print(f"Device {name} has been connected.")
+
+        elif os.name == "nt":
+            command = f"Enable-NetAdapter -Name \"{name}\""
+            subprocess.check_output(["powershell", "-ExecutionPolicy", "Bypass", "-Command", command])
+
             
     def disconnect_network(self,name):
+        if os.name == "posix":
             command = f"nmcli device disconnect {name}"
             subprocess.check_output(command, shell=True)
-            print(f"Device {name} has been disconnected.")
+
+        elif os.name == "nt":
+            command = f"Disable-NetAdapter -Name \"{name}\" -Confirm:$false "
+            subprocess.check_output(["powershell", "-ExecutionPolicy", "Bypass", "-Command", command])
 
     def __str__(self):
         return f"""Name: {self.name} Type: {self.type} 
