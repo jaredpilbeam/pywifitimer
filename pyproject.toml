@@ -1,9 +1,10 @@
 [project]
-name = "pywifitimer"
+name = "py-network-timer"
 version = "0.1.0"
-description = "Add your description here"
+description = "A simple GUI program for scheduling network connection/disconnection."
 readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
+    "pyinstaller>=6.20.0",
     "pyqt6>=6.11.0",
 ]

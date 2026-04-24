@@ -41,7 +41,7 @@ class PyNetworkTimer(QWidget):
     def __init__(self, *args, **kwargs):
         super().__init__(*args,**kwargs)
         self.setWindowTitle("PyNetwork Timer")
-        self.setWindowIcon(QIcon("icon.jpg"))
+        self.setWindowIcon(QIcon("icon/icon.png"))
         self.resize(452, 400)
         self.initUI()
 
@@ -69,7 +69,7 @@ class PyNetworkTimer(QWidget):
                     device = NetworkDevice(split_line[0],split_line[1],
                                     split_line[3])
                     self.device_list.append(device)
-                    self.checkboxes.append(QCheckBox(text=split_line[0]))
+                    self.checkboxes.append(QCheckBox(text=split_line[1]))
                     self.checkboxes[index].setChecked(True)
                     status_page_layout.addWidget(self.checkboxes[index], i, j,
                                                 alignment=Qt.AlignmentFlag.AlignLeft)
@@ -285,10 +285,10 @@ class PyNetworkTimer(QWidget):
                         for checkbox in self.checkboxes:
                             for device in self.device_list:
                                 try:
-                                    if checkbox.isChecked() and checkbox.text() == device.name and device.connection != "none":
-                                        device.disconnect_network(checkbox.text())
-                                    if not checkbox.isChecked() and checkbox.text() == device.name and device.connection == "none":
-                                        device.connect_network(checkbox.text())
+                                    if checkbox.isChecked() and checkbox.text() == device.type and device.connection != "none":
+                                        device.disconnect_network(device.name)
+                                    if not checkbox.isChecked() and checkbox.text() == device.type and device.connection == "none":
+                                        device.connect_network(device.name)
                                 except subprocess.CalledProcessError:
                                     pass
                         self.status_line.setText(f"Disconnected. Next reconnection at : {(interval[1]).toString("h:mm AP")}")
@@ -299,10 +299,10 @@ class PyNetworkTimer(QWidget):
                             for checkbox in self.checkboxes:
                                 for device in self.device_list:
                                     try:
-                                        if checkbox.isChecked() and checkbox.text() == device.name and device.connection != "none":
-                                            device.disconnect_network(checkbox.text())
-                                        if not checkbox.isChecked() and checkbox.text() == device.name and device.connection == "none":
-                                            device.connect_network(checkbox.text())
+                                        if checkbox.isChecked() and checkbox.text() == device.type and device.connection != "none":
+                                            device.disconnect_network(device.name)
+                                        if not checkbox.isChecked() and checkbox.text() == device.type and device.connection == "none":
+                                            device.connect_network(device.name)
                                     except subprocess.CalledProcessError:
                                         pass
                             self.status_line.setText(f"Disconnected. Next reconnection at : {(interval[1]).toString("h:mm AP")}")
@@ -313,10 +313,10 @@ class PyNetworkTimer(QWidget):
                             for checkbox in self.checkboxes:
                                 for device in self.device_list:
                                     try:
-                                        if checkbox.isChecked() and checkbox.text() == device.name and device.connection != "none":
-                                            device.disconnect_network(checkbox.text())
-                                        if not checkbox.isChecked() and checkbox.text() == device.name and device.connection == "none":
-                                            device.connect_network(checkbox.text())
+                                        if checkbox.isChecked() and checkbox.text() == device.type and device.connection != "none":
+                                            device.disconnect_network(device.name)
+                                        if not checkbox.isChecked() and checkbox.text() == device.type and device.connection == "none":
+                                            device.connect_network(device.name)
                                     except subprocess.CalledProcessError:
                                         pass
                             self.status_line.setText(f"Disconnected. Next reconnection at : {(interval[1]).toString("h:mm AP")}")
