@@ -41,7 +41,7 @@ class PyNetworkTimer(QWidget):
     def __init__(self, *args, **kwargs):
         super().__init__(*args,**kwargs)
         self.setWindowTitle("PyNetwork Timer")
-        self.setWindowIcon(QIcon("placedholder_icon.jpg"))
+        self.setWindowIcon(QIcon("icon.jpg"))
         self.resize(452, 400)
         self.initUI()
 
