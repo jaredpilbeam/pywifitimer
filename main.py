@@ -21,17 +21,17 @@ def get_linux_devs():
 def get_win_devs():
         name_command = """Get-NetAdapter | ForEach-Object {$_.Name.Trim()} """
         try:
-            name_output = subprocess.check_output(["powershell", "-Command", name_command])
+            name_output = subprocess.check_output(["powershell", "-Command", name_command],creationflags=0x08000000)
         except subprocess.CalledProcessError as cpe:
             name_output = cpe.name_output
         type_command = """Get-NetAdapter | ForEach-Object {$_.ifDesc.Trim()}"""
         try:
-            type_output = subprocess.check_output(["powershell", "-Command", type_command])
+            type_output = subprocess.check_output(["powershell", "-Command", type_command],creationflags=0x08000000)
         except subprocess.CalledProcessError as cpe:
             type_output = cpe.type_output
         connection_command = """Get-NetAdapter | ForEach-Object {$_.Status.Trim()}"""
         try:
-            connection_output = subprocess.check_output(["powershell", "-Command", connection_command])
+            connection_output = subprocess.check_output(["powershell", "-Command", connection_command],creationflags=0x08000000)
         except subprocess.CalledProcessError as cpe:
             connection_output = cpe.connection_output
         return name_output, type_output, connection_output
@@ -41,7 +41,7 @@ class PyNetworkTimer(QWidget):
     def __init__(self, *args, **kwargs):
         super().__init__(*args,**kwargs)
         self.setWindowTitle("PyNetwork Timer")
-        self.setWindowIcon(QIcon("icon/icon.png"))
+        self.setWindowIcon(QIcon("icon.png"))
         self.resize(452, 400)
         self.initUI()
 
@@ -102,7 +102,7 @@ class PyNetworkTimer(QWidget):
             connections = (connections.decode("utf-8")).splitlines()
 
             for k in range(0,len(names)):
-                if names[k] == "Ethernet" or names[k] == "Wi-Fi":
+                if "Ethernet" in names[k] or "Wi-Fi" in names[k] :
                     device = NetworkDevice(names[k], types[k], connections[k])
                     self.device_list.append(device)
                     self.checkboxes.append(QCheckBox(text=names[k]))
@@ -168,7 +168,7 @@ class PyNetworkTimer(QWidget):
         types = (types.decode("utf-8")).splitlines()
         connections = (connections.decode("utf-8")).splitlines()
         for k in range(0,len(names)):
-            if names[k] == "Ethernet" or names[k] == "Wi-Fi":
+            if "Ethernet" in names[k] or "Wi-Fi" in names[k] :
                 device = NetworkDevice(names[k], types[k], connections[k])
                 self.device_list.append(device)
 
@@ -285,10 +285,16 @@ class PyNetworkTimer(QWidget):
                         for checkbox in self.checkboxes:
                             for device in self.device_list:
                                 try:
-                                    if checkbox.isChecked() and checkbox.text() == device.type and device.connection != "none":
-                                        device.disconnect_network(device.name)
-                                    if not checkbox.isChecked() and checkbox.text() == device.type and device.connection == "none":
-                                        device.connect_network(device.name)
+                                    if os.name=="posix":
+                                        if checkbox.isChecked() and checkbox.text() == device.type and device.connection != "none":
+                                            device.disconnect_network(device.name)
+                                        if not checkbox.isChecked() and checkbox.text() == device.type and device.connection == "none":
+                                            device.connect_network(device.name)
+                                    elif os.name=="nt":
+                                        if checkbox.isChecked() and checkbox.text() == device.name and device.connection != "none":
+                                            device.disconnect_network(device.name)
+                                        if not checkbox.isChecked() and checkbox.text() == device.name and device.connection == "none":
+                                            device.connect_network(device.name)
                                 except subprocess.CalledProcessError:
                                     pass
                         self.status_line.setText(f"Disconnected. Next reconnection at : {(interval[1]).toString("h:mm AP")}")
@@ -299,10 +305,16 @@ class PyNetworkTimer(QWidget):
                             for checkbox in self.checkboxes:
                                 for device in self.device_list:
                                     try:
-                                        if checkbox.isChecked() and checkbox.text() == device.type and device.connection != "none":
-                                            device.disconnect_network(device.name)
-                                        if not checkbox.isChecked() and checkbox.text() == device.type and device.connection == "none":
-                                            device.connect_network(device.name)
+                                        if os.name =="posix":
+                                            if checkbox.isChecked() and checkbox.text() == device.type and device.connection != "none":
+                                                device.disconnect_network(device.name)
+                                            if not checkbox.isChecked() and checkbox.text() == device.type and device.connection == "none":
+                                                device.connect_network(device.name)
+                                        elif os.name=="nt":
+                                            if checkbox.isChecked() and checkbox.text() == device.name and device.connection != "none":
+                                                device.disconnect_network(device.name)
+                                            if not checkbox.isChecked() and checkbox.text() == device.name and device.connection == "none":
+                                                device.connect_network(device.name)
                                     except subprocess.CalledProcessError:
                                         pass
                             self.status_line.setText(f"Disconnected. Next reconnection at : {(interval[1]).toString("h:mm AP")}")
@@ -313,10 +325,16 @@ class PyNetworkTimer(QWidget):
                             for checkbox in self.checkboxes:
                                 for device in self.device_list:
                                     try:
-                                        if checkbox.isChecked() and checkbox.text() == device.type and device.connection != "none":
-                                            device.disconnect_network(device.name)
-                                        if not checkbox.isChecked() and checkbox.text() == device.type and device.connection == "none":
-                                            device.connect_network(device.name)
+                                        if os.name =="posix":
+                                            if checkbox.isChecked() and checkbox.text() == device.type and device.connection != "none":
+                                                device.disconnect_network(device.name)
+                                            if not checkbox.isChecked() and checkbox.text() == device.type and device.connection == "none":
+                                                device.connect_network(device.name)
+                                        elif os.name=="nt":
+                                            if checkbox.isChecked() and checkbox.text() == device.name and device.connection != "none":
+                                                device.disconnect_network(device.name)
+                                            if not checkbox.isChecked() and checkbox.text() == device.name and device.connection == "none":
+                                                device.connect_network(device.name)
                                     except subprocess.CalledProcessError:
                                         pass
                             self.status_line.setText(f"Disconnected. Next reconnection at : {(interval[1]).toString("h:mm AP")}")
@@ -360,7 +378,7 @@ class NetworkDevice:
 
         elif os.name == "nt":
             command = f"Enable-NetAdapter -Name \"{name}\""
-            subprocess.check_output(["powershell", "-ExecutionPolicy", "Bypass", "-Command", command])
+            subprocess.check_output(["powershell", "-ExecutionPolicy", "Bypass", "-Command", command],creationflags=0x08000000)
 
             
     def disconnect_network(self,name):
@@ -370,7 +388,7 @@ class NetworkDevice:
 
         elif os.name == "nt":
             command = f"Disable-NetAdapter -Name \"{name}\" -Confirm:$false "
-            subprocess.check_output(["powershell", "-ExecutionPolicy", "Bypass", "-Command", command])
+            subprocess.check_output(["powershell", "-ExecutionPolicy", "Bypass", "-Command", command],creationflags=0x08000000)
 
     def __str__(self):
         return f"""Name: {self.name} Type: {self.type} 
