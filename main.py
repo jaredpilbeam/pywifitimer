@@ -32,8 +32,6 @@ class PyNetworkTimer(QWidget):
         status_page = QWidget(tab)
         self.status_page_layout = QGridLayout()
         status_page.setLayout(self.status_page_layout)
-        (self.status_page_layout.addWidget
-            (QLabel("Select Network Device(s) to schedule:"),0,0))
         self.status_line = QLabel("Schedule not running")
 # Populate the status page checkboxes based on available network devices      
         if os.name == "posix":
@@ -150,7 +148,7 @@ class PyNetworkTimer(QWidget):
         return intervals.append(["","","",""])
 # Schedule start button on status page 
     def schedule_on_click(self, table, intervals):
-        if self.schedule_running == True:
+        if self.schedule_running == True :
             return
         for i in range(0, table.rowCount()):
             for j in range(4):
@@ -192,25 +190,14 @@ class PyNetworkTimer(QWidget):
                 for checkbox in self.checkboxes:
                     for device in self.device_list:
                         try:
-                            if os.name=="posix":
-                                if checkbox.isChecked() and (checkbox.text()
-                                      == device.type and device.connection 
-                                          != "none"):
-                                    device.disconnect_network(device.name)
-                                if not checkbox.isChecked() and (checkbox.text()
-                                      == device.type and device.connection !=
-                                          "connected"):
-                                    device.connect_network(device.name)
-
-                            elif os.name=="nt":
-                                if checkbox.isChecked() and (checkbox.text()
-                                      == device.name and device.connection 
-                                        != "none"):
-                                    device.disconnect_network(device.name)
-                                if not checkbox.isChecked() and (checkbox.text()
-                                      == device.name and device.connection
-                                          == "none"):
-                                    device.connect_network(device.name)
+                            if checkbox.isChecked() and (checkbox.text()
+                                == device.type and device.connection 
+                                != "none"):
+                                device.disconnect_network(device.name)
+                            if not checkbox.isChecked() and (checkbox.text()
+                                == device.type and device.connection !=
+                                "connected"):
+                                device.connect_network(device.name)
 
                         except subprocess.CalledProcessError:
                             self.status_line.setText("""Error, Disconnection 
@@ -302,80 +289,41 @@ class PyNetworkTimer(QWidget):
         return name_output+":"+type_output+":"+connection_output
 # populates the status page with checkboxes for each device  
     def populate_status_page(self,get_dev_func):
-            if os.name == "posix":
-                i=1
-                j=0
-                index = 0
-                self.checkboxes=[]
-                for line in get_dev_func.splitlines():
-                    split_line = line.decode().split(":")
-                    if (split_line[1] == "ethernet" or split_line[1] == "wifi"):
-                        device = NetworkDevice(split_line[0],split_line[1],
-                                        split_line[2])
-                        self.device_list.append(device)
-                        self.checkboxes.append(QCheckBox(text=split_line[1]))
-                        self.checkboxes[index].setChecked(True)
-                        (self.status_page_layout.
-                         addWidget(self.checkboxes[index],
-                                   i,
-                                   j,
-                                   alignment=Qt.AlignmentFlag.AlignLeft))
-                        index += 1
-                    i += 1
-                    if( i % 4 == 3):
-                        j += 1
-                        i = 1
-                    if(len(get_dev_func.splitlines()) == 1):
-                        self.status_page_layout.addWidget(QLabel(""),
+        (self.status_page_layout.addWidget
+        (QLabel("Select Network Device(s) to schedule:"),0,0))
+        i=1
+        j=0
+        index = 0
+        self.checkboxes=[]
+        for line in get_dev_func.splitlines():
+            split_line = line.decode().split(":")
+            if (split_line[1] == "ethernet" or split_line[1] == "wifi"):
+                device = NetworkDevice(split_line[0],split_line[1],
+                                       split_line[2])
+                self.device_list.append(device)
+                self.checkboxes.append(QCheckBox(text=split_line[1]))
+                self.checkboxes[index].setChecked(True)
+                (self.status_page_layout.
+                addWidget(self.checkboxes[index],
+                        i,
+                        j,
+                        alignment=Qt.AlignmentFlag.AlignLeft))
+                index += 1
+                i += 1
+                if( i % 4 == 3):
+                    j += 1
+                    i = 1
+                if(len(get_dev_func.splitlines()) == 1):
+                    self.status_page_layout.addWidget(QLabel(""),
                                                             j,
                                                             i,
                                                             1,
                                                             2)
-                    elif(len(get_dev_func.splitlines()) == 2):
-                        self.status_page_layout.addWidget(QLabel(""), j, i)
-                    self.status_page_layout.addWidget(self.status_line,j+6,0,1,4)
-                    self.status_page_layout.addWidget(self.schedule_on,j+7,1,1,2)
-                    self.status_page_layout.addWidget(self.schedule_off,j+7,3,1,2)
-
-            elif os.name == "nt": 
-                i=1
-                j=0
-                index = 0
-                self.checkboxes=[]
-                names, types, connections = get_dev_func
-                names = (names.decode("utf-8")).splitlines()
-                types = (types.decode("utf-8")).splitlines()
-                connections = (connections.decode("utf-8")).splitlines()
-
-                for k in range(0,len(names)):
-                    if "Ethernet" in names[k] or "Wi-Fi" in names[k] :
-                        device = NetworkDevice(names[k],
-                                                types[k],
-                                                  connections[k])
-                        self.device_list.append(device)
-                        self.checkboxes.append(QCheckBox(text=names[k]))
-                        self.checkboxes[index].setChecked(True)
-                        status_page_layout.addWidget(self.checkboxes[index], 
-                                                     i, 
-                                                     j,
-                                                    alignment=(Qt.AlignmentFlag.
-                                                               AlignLeft))
-                        index += 1
-                        i += 1
-                    if( i % 4 == 3):
-                        j += 1
-                        i = 1
-                    if(len(names) == 1):
-                        status_page_layout.addWidget(QLabel(""), j, i, 1, 2)
-                    elif(len(names) == 2):
-                        status_page_layout.addWidget(QLabel(""), j, i)
-
-                self.status_line = QLabel("Schedule not running")
-                status_page_layout.setRowStretch((j+1),1)
-                status_page_layout.addWidget(QLabel(""),j+2,1,5,4)
-                status_page_layout.addWidget(self.status_line,j+6,0,1,4)
-                status_page_layout.addWidget(schedule_on,j+7,1,1,2)
-                status_page_layout.addWidget(schedule_off,j+7,3,1,2)
+                elif(len(get_dev_func.splitlines()) == 2):
+                    self.status_page_layout.addWidget(QLabel(""), j, i)
+                self.status_page_layout.addWidget(self.status_line,j+6,0,1,4)
+                self.status_page_layout.addWidget(self.schedule_on,j+7,1,1,2)
+                self.status_page_layout.addWidget(self.schedule_off,j+7,3,1,2)
 
 class NetworkDevice:
     def __init__(self, name, type, connection):
