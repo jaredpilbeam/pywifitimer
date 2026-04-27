@@ -1,6 +1,6 @@
 [project]
 name = "py-network-timer"
-version = "0.1.0"
+version = "0.2.0"
 description = "A simple GUI program for scheduling network connection/disconnection."
 readme = "README.md"
 requires-python = ">=3.13"
