@@ -149,7 +149,7 @@ class PyNetworkTimer(QWidget):
     def schedule_on_click(self, table, intervals):
         if self.schedule_running == True :
             return
-        self.status_line.setText("Schedule is currently" 
+        self.status_line.setText("Schedule is currently " 
                                 "running.\nDevices connected"
                                 " at this time.")
         for i in range(0, table.rowCount()):
@@ -231,7 +231,7 @@ class PyNetworkTimer(QWidget):
                 if self.connection_state != True:
                     if device.connection == "none":
                         device.connect_network(device.name) 
-                        self.status_line.setText("Schedule is currently" 
+                        self.status_line.setText("Schedule is currently " 
                                                  "running.\nDevices connected"
                                                  " at this time.")
         time.sleep(1)
